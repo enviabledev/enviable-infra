@@ -36,11 +36,16 @@ data "aws_iam_policy_document" "app" {
     resources = [var.ecr_repository_arn]
   }
 
-  # Read app secrets/config under the prefix
+  # Read app secrets/config under the prefix. Two ARNs: the path node itself
+  # (GetParametersByPath authorizes against parameter<prefix>, no trailing /*)
+  # and the children (GetParameter on parameter<prefix>/NAME).
   statement {
-    sid       = "SsmRead"
-    actions   = ["ssm:GetParameter", "ssm:GetParameters", "ssm:GetParametersByPath"]
-    resources = ["arn:aws:ssm:${var.region}:${var.account_id}:parameter${var.parameter_path_prefix}/*"]
+    sid     = "SsmRead"
+    actions = ["ssm:GetParameter", "ssm:GetParameters", "ssm:GetParametersByPath"]
+    resources = [
+      "arn:aws:ssm:${var.region}:${var.account_id}:parameter${var.parameter_path_prefix}",
+      "arn:aws:ssm:${var.region}:${var.account_id}:parameter${var.parameter_path_prefix}/*",
+    ]
   }
 
   # App read/write to the S3 bucket
