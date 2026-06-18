@@ -1,37 +1,57 @@
 name: terraform
 
+# Plan on PRs (review the infra diff before merge); apply only on a deliberate
+# manual dispatch. No auto-apply on push — merging should not silently mutate
+# production infrastructure.
 on:
   pull_request:
     branches: [main]
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
   id-token: write
   contents: read
 
+# Non-secret inputs come from repo variables; the secret from a repo secret.
+# Terraform reads them as TF_VAR_* (so no terraform.tfvars is needed in CI).
+env:
+  TF_VAR_caddy_email: ${{ vars.CADDY_EMAIL }}
+  TF_VAR_github_org: ${{ vars.GH_ORG }}
+  TF_VAR_default_initial_password: ${{ secrets.DEFAULT_INITIAL_PASSWORD }}
+
+# One terraform run at a time (state is DynamoDB-locked; serialize to avoid
+# queued lock contention).
+concurrency:
+  group: terraform-prod
+  cancel-in-progress: false
+
 jobs:
   terraform:
     runs-on: ubuntu-latest
-    environment: ${{ github.event_name == 'push' && 'production' || '' }}
     steps:
       - uses: actions/checkout@v4
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_INFRA_ROLE_ARN }}
           aws-region: eu-north-1
 
       - uses: hashicorp/setup-terraform@v3
 
-      - run: terraform init
-      - run: terraform fmt -recursive -check
-      - run: terraform validate
+      - name: Init
+        run: terraform init -input=false -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}"
+
+      - name: Format check
+        run: terraform fmt -recursive -check
+
+      - name: Validate
+        run: terraform validate
 
       - name: Plan
         if: github.event_name == 'pull_request'
-        run: terraform plan -var-file=terraform.tfvars
+        run: terraform plan -input=false
 
       - name: Apply
-        if: github.event_name == 'push'
-        run: terraform apply -auto-approve -var-file=terraform.tfvars
+        if: github.event_name == 'workflow_dispatch'
+        run: terraform apply -auto-approve -input=false
