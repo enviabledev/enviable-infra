@@ -52,6 +52,8 @@ hence the two-step bootstrap.
    ```bash
    cp terraform.tfvars.example terraform.tfvars
    # set: caddy_email, github_org, default_initial_password
+   # also set github_repo_backend / github_repo_infra ONLY if your repo names
+   # differ from the defaults (enviable-system / enviable-infra)
    ```
 
 4. **Apply the main stack:**
