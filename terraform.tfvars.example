@@ -1,0 +1,5 @@
+caddy_email              = "ops@enviabletricycle.com"
+github_org               = "your-github-org"
+github_repo_backend      = "enviable-system"
+github_repo_infra        = "enviable-infra"
+default_initial_password = "change-me-strong-temp-password"
