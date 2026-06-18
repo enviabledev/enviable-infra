@@ -1,0 +1,37 @@
+name: terraform
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'push' && 'production' || '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_INFRA_ROLE_ARN }}
+          aws-region: eu-north-1
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - run: terraform init
+      - run: terraform fmt -recursive -check
+      - run: terraform validate
+
+      - name: Plan
+        if: github.event_name == 'pull_request'
+        run: terraform plan -var-file=terraform.tfvars
+
+      - name: Apply
+        if: github.event_name == 'push'
+        run: terraform apply -auto-approve -var-file=terraform.tfvars
