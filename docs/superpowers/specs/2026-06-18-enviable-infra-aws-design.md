@@ -192,3 +192,11 @@ enviable-infra/
     cicd/
   docs/superpowers/specs/2026-06-18-enviable-infra-aws-design.md
 ```
+
+## 12. Session/cookie resolution (Task 16 checkpoint outcome)
+
+Inspection of `enviable-system/src/main.ts` session config at deploy time:
+
+- **`secure` cookie** — already env-driven (`secure: process.env.NODE_ENV === 'production'`). We set `NODE_ENV=production` via SSM, so it is `true`. No change needed.
+- **CORS** — not configured, and **not required**: the frontend proxies `/api/*` server-side via Next rewrites, so the browser only ever talks to `portal.…`. Backend requests originate from Vercel's server, not the browser, so browser CORS never applies and `sameSite: 'lax'` (no cookie `domain`) keeps cookies same-origin to `portal`. No change needed.
+- **`trust proxy`** — was **absent**. Behind Caddy (TLS terminated, backend sees plain HTTP), Express treated requests as insecure and express-session refused to set the `secure` cookie, which would silently break login. **Resolved** with the user's permission by adding `proxy: true` to the `session({...})` options in `enviable-system/src/main.ts` (enviable-system commit `fc32771`). `tsc --noEmit` passes. This is express-session's built-in option to trust `X-Forwarded-Proto`; no other behavior changed.
