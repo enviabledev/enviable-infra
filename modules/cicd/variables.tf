@@ -1,0 +1,10 @@
+variable "project" { type = string }
+variable "region" { type = string }
+variable "account_id" { type = string }
+variable "github_org" { type = string }
+variable "github_repo_backend" { type = string }
+variable "github_repo_infra" { type = string }
+variable "ecr_repository_arn" { type = string }
+variable "bucket_arn" { type = string }
+variable "parameter_path_prefix" { type = string }
+variable "instance_id" { type = string }
