@@ -382,3 +382,12 @@ New Terraform: `modules/monitoring` (SNS, subscription, topic policy, EventBridg
 and target, CW agent config param, disk alarm, drift document and association);
 `modules/iam` gains `CloudWatchAgentServerPolicy` and a scoped `sns:Publish`;
 `modules/compute` volume bumped to 40G.
+
+Latent footgun fixed in the same change: the instance AMI comes from the "latest
+AL2023" SSM parameter, so the first `terraform plan` after AWS published a newer AL2023
+image wanted to replace the production box (`aws_instance` forced replacement on `ami`).
+That would have destroyed `/opt/enviable` and the running containers. Added
+`lifecycle { ignore_changes = [ami] }` on the instance so AMI drift no longer forces
+replacement; image refreshes are now a deliberate taint/replace, not a side effect of an
+unrelated apply. Verified the post-fix plan shows the instance updated in-place (volume
+only), with zero destroys.
