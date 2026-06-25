@@ -19,6 +19,12 @@ resource "aws_iam_role_policy_attachment" "ssm_core" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
+# CloudWatch agent: PutMetricData + read its AmazonCloudWatch-* config from SSM
+resource "aws_iam_role_policy_attachment" "cw_agent" {
+  role       = aws_iam_role.ec2.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
 data "aws_iam_policy_document" "app" {
   # Pull from ECR
   statement {
@@ -58,6 +64,15 @@ data "aws_iam_policy_document" "app" {
     sid       = "S3List"
     actions   = ["s3:ListBucket"]
     resources = [var.bucket_arn]
+  }
+
+  # Publish to the alerts topic (the daily image-drift check on the box).
+  # Topic ARN is constructed (not referenced) to avoid an iam<->monitoring cycle;
+  # the monitoring module creates a topic with exactly this name.
+  statement {
+    sid       = "SnsPublishAlerts"
+    actions   = ["sns:Publish"]
+    resources = ["arn:aws:sns:${var.region}:${var.account_id}:${var.project}-alerts"]
   }
 }
 

@@ -54,6 +54,16 @@ module "compute" {
   instance_profile_name = module.iam.instance_profile_name
 }
 
+module "monitoring" {
+  source                = "./modules/monitoring"
+  project               = var.project
+  region                = var.region
+  account_id            = data.aws_caller_identity.current.account_id
+  alert_email           = var.caddy_email # reuse the infra contact email
+  instance_id           = module.compute.instance_id
+  parameter_path_prefix = module.ssm.parameter_path_prefix
+}
+
 module "cicd" {
   source                = "./modules/cicd"
   project               = var.project
