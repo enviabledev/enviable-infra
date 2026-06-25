@@ -13,11 +13,20 @@ resource "aws_instance" "this" {
 
   root_block_device {
     volume_type = "gp3"
-    volume_size = 20
+    volume_size = 40
     encrypted   = true
   }
 
   tags = { Name = "${var.project}-backend" }
+
+  # The AMI is sourced from the "latest AL2023" SSM parameter, which advances
+  # whenever AWS publishes a new image. Without this, any apply after an AMI
+  # refresh would destroy and recreate the production box (losing /opt/enviable,
+  # the running containers, and the deploy state). This is a stateful pet box;
+  # AMI updates are handled deliberately (taint/replace), not on drift.
+  lifecycle {
+    ignore_changes = [ami]
+  }
 }
 
 resource "aws_eip" "this" {
