@@ -61,9 +61,7 @@ variable "invoice_config" {
     INVOICE_COMPANY_EMAIL   = "info@enviabletricycle.com"
     INVOICE_COMPANY_RC      = "6987445"
     INVOICE_COMPANY_TIN     = "31405903-0001"
-    # INVOICE_COMPANY_TEL intentionally unset: no company phone supplied for
-    # launch. The document omits the Tel line when blank; set once Theresa
-    # provides a real line.
+    INVOICE_COMPANY_TEL     = "+2348034481848"
 
     # Globus Bank routing — distinct registered account per wheeler class.
     # INVOICE_BANK_*_SORT_CODE intentionally unset: Nigerian NIP transfers route
